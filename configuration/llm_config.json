@@ -1,0 +1,89 @@
+{
+    "api_keys": {
+        "openai": "your-openai-api-key-here",
+        "together": "your-together-api-key-here",
+        "anthropic": "your-anthropic-api-key-here",
+        "groq": "your-groq-api-key-here"
+    },
+    "llm": {
+      "framework": "openai",
+  
+      "openai": {
+        "model": "gpt-4.1-mini",
+        "model_kwargs": {
+          "gpt-4.1-mini": {
+            "temperature": 0.1,
+            "max_retries": 3
+          },
+          "gpt-4.1-nano":{
+            "temperature": 0.1,
+            "max_retries": 3
+          },
+          "gpt-4o-mini": {
+            "temperature": 0.1,
+            "max_retries": 3
+          },
+          "gpt-4o": {
+            "temperature": 0.7,
+            "max_retries": 3
+          }
+        }
+      },
+      "together": {
+        "model": "meta-llama/Llama-4-Scout-17B-16E-Instruct",
+  
+        "model_kwargs": {
+          "meta-llama/Llama-4-Scout-17B-16E-Instruct": {
+            "temperature": 0.1,
+            "max_retries": 3,
+            "disable_streaming": true,
+            "seed": 42
+          },
+          "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8": {
+            "temperature": 0.1,
+            "max_retries": 3,
+            "disable_streaming": true,
+            "seed": 42
+          },
+          "Qwen/Qwen3-235B-A22B-fp8-tput": {
+            "temperature": 0.1,
+            "max_retries": 3,
+            "disable_streaming": true,
+            "seed": 42
+          }
+        }
+      },
+      "groq": {
+        "model": "openai/gpt-oss-20b",
+  
+        "model_kwargs": {
+          "openai/gpt-oss-20b":{
+            "temperature": 0.1,
+            "max_retries": 3,
+            "disable_streaming": true,
+            "seed": 42
+          },
+          "meta-llama/Llama-4-Scout-17B-16E-Instruct": {
+            "temperature": 0.1,
+            "max_retries": 3,
+            "disable_streaming": true,
+            "seed": 42
+          },
+          "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8": {
+            "temperature": 0.1,
+            "max_retries": 3,
+            "disable_streaming": true,
+            "seed": 42
+          },
+          "Qwen/Qwen3-235B-A22B-fp8-tput": {
+            "temperature": 0.1,
+            "max_retries": 3,
+            "disable_streaming": true,
+            "seed": 42
+          }
+       }
+      }
+    }
+  }
+  
+  
