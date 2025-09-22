@@ -3,6 +3,7 @@ import os
 from datetime import date
 from configuration.config_manager import LLMFactory
 from Templete import SYSTEM_PROMPT_TEMPLATE
+from conveter import Converter
 
 # Create .tmp directory if it doesn't exist
 os.makedirs('.tmp', exist_ok=True)
@@ -218,7 +219,32 @@ if submitted:
         
         st.success(f"✅ AI-generated resume saved successfully to {output_file}!")
         
-        # Display the generated resume in the app
+        # Save the AI-generated resume to a file
+        output_md_file = os.path.join('.tmp', f"{name.replace(' ', '_')}_resume.md" if name else 'resume.md')
+        with open(output_md_file, 'w', encoding='utf-8') as f:
+            f.write(response_content)
+
+        st.success(f"✅ AI-generated resume saved successfully to {output_md_file}!")
+
+        # ------------------- Generate PDF -------------------
+        try:
+            output_pdf_file = output_md_file.replace(".md", ".pdf")
+            Converter.md_to_pdf(output_md_file, output_pdf_file)
+            st.success(f"📄 PDF successfully generated at {output_pdf_file}!")
+
+            # Optionally let the user download it
+            with open(output_pdf_file, "rb") as pdf_file:
+                st.download_button(
+                    label="⬇️ Download Resume as PDF",
+                    data=pdf_file,
+                    file_name=os.path.basename(output_pdf_file),
+                    mime="application/pdf"
+                )
+        except Exception as e:
+            st.error(f"❌ Failed to generate PDF: {str(e)}")
+            st.exception(e)
+
+        # ------------------- Display the generated resume -------------------
         st.markdown("## Generated Resume Preview")
         st.markdown(response_content, unsafe_allow_html=True)
 

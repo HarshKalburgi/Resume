@@ -1,0 +1,15 @@
+# Core Dependencies
+streamlit>=1.32.0
+mistune>=3.0.0
+weasyprint>=60.0
+cairocffi>=1.7.1
+cairosvg>=2.8.2
+python-dotenv>=1.0.0
+PyYAML>=6.0.1
+requests>=2.31.0
+
+# System Dependencies (Note: These require manual installation on Windows)
+# 1. Install GTK3 Runtime from: https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer
+# 2. Add GTK3 to your system PATH environment variable
+# 3. Install Python GTK3 bindings:
+PyGObject>=3.42.0
