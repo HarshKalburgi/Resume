@@ -1,8 +1,11 @@
 import streamlit as st
+import os
 from datetime import date
 from configuration.config_manager import LLMFactory
-from pydantic import ValidationError
-from Templete import ResumeData, SYSTEM_PROMPT_TEMPLATE
+from Templete import SYSTEM_PROMPT_TEMPLATE
+
+# Create .tmp directory if it doesn't exist
+os.makedirs('.tmp', exist_ok=True)
 
 # Load model
 model = LLMFactory.get_llm()
@@ -96,58 +99,129 @@ with st.form("resume_form"):
 
 # ------------------- AI Resume Generation -------------------
 if submitted:
-    # Convert inputs into a human-readable plain text format
-    plain_text_resume_data = f"""
-PERSONAL INFORMATION
-Name: {name}
-Phone: {phone}
-Email: {email}
-Designation: {designation}
-LinkedIn: {linkedin}
-GitHub: {github}
-Other Links: {other_links}
-
-EDUCATION
-Degree: {degree}
-Institution: {institution}
-Start Date: {edu_start_date}
-End Date: {"Present" if edu_present else edu_end_date}
-CGPA: {cgpa}
-
-SKILLS
-{', '.join([s.strip() for s in all_skills.split(",") if s.strip()])}
-
-PROJECTS
-""" + "\n".join(
-        [
-            f"- {p['title']} ({p['start_date']} to {'Present' if p['present'] else p['end_date']}): {p['description']}"
+    # Prepare the resume data in a clean format for the LLM
+    resume_data = {
+        "personal_information": {
+            "name": name,
+            "phone": phone,
+            "email": email,
+            "designation": designation,
+            "linkedin": linkedin,
+            "github": github,
+            "other_links": [link.strip() for link in other_links.split(",") if link.strip()]
+        },
+        "education": {
+            "degree": degree,
+            "institution": institution,
+            "start_date": edu_start_date.strftime("%Y-%m-%d") if edu_start_date else "",
+            "end_date": "Present" if edu_present else (edu_end_date.strftime("%Y-%m-%d") if edu_end_date else ""),
+            "cgpa": cgpa
+        },
+        "skills": [s.strip() for s in all_skills.split(",") if s.strip()],
+        "projects": [
+            {
+                "title": p["title"],
+                "start_date": p["start_date"].strftime("%Y-%m-%d") if p["start_date"] else "",
+                "end_date": "Present" if p["present"] else (p["end_date"].strftime("%Y-%m-%d") if p["end_date"] else ""),
+                "description": p["description"]
+            }
             for p in st.session_state.projects if p["title"].strip()
-        ]
-    ) + "\n\nEXPERIENCE\n" + "\n".join(
-        [
-            f"- {e['title']} ({e['start_date']} to {'Present' if e['present'] else e['end_date']}): {e['description']}"
+        ],
+        "experience": [
+            {
+                "title": e["title"],
+                "start_date": e["start_date"].strftime("%Y-%m-%d") if e["start_date"] else "",
+                "end_date": "Present" if e["present"] else (e["end_date"].strftime("%Y-%m-%d") if e["end_date"] else ""),
+                "description": e["description"]
+            }
             for e in st.session_state.experiences if e["title"].strip()
-        ]
-    ) + f"""
-
-JOB DESCRIPTION
-{job_desc}
-"""
-
+        ],
+        "job_description": job_desc
+    }
+    
     st.info("⏳ Generating resume with AI...")
-
+    
     try:
-        # Call the LLM with structured output
-        model_with_structure = model.with_structured_output(ResumeData)
-        response = model_with_structure.invoke(
-            SYSTEM_PROMPT_TEMPLATE.format(resume_data=plain_text_resume_data)
+        # Format the resume data as a clean string for the LLM
+        formatted_resume = ""
+        
+        # Personal Information
+        personal = resume_data["personal_information"]
+        formatted_resume += f"PERSONAL INFORMATION\nName: {personal['name']}\n"
+        if personal['phone']:
+            formatted_resume += f"Phone: {personal['phone']}\n"
+        if personal['email']:
+            formatted_resume += f"Email: {personal['email']}\n"
+        if personal['designation']:
+            formatted_resume += f"Designation: {personal['designation']}\n"
+        if personal['linkedin']:
+            formatted_resume += f"LinkedIn: {personal['linkedin']}\n"
+        if personal['github']:
+            formatted_resume += f"GitHub: {personal['github']}\n"
+        if personal['other_links']:
+            formatted_resume += f"Other Links: {', '.join(personal['other_links'])}\n"
+        
+        # Education
+        edu = resume_data["education"]
+        formatted_resume += "\nEDUCATION\n"
+        if edu['degree'] or edu['institution']:
+            if edu['degree']:
+                formatted_resume += f"Degree: {edu['degree']}\n"
+            if edu['institution']:
+                formatted_resume += f"Institution: {edu['institution']}\n"
+            if edu['start_date']:
+                formatted_resume += f"Period: {edu['start_date']} to {edu['end_date']}\n"
+            if edu['cgpa']:
+                formatted_resume += f"CGPA: {edu['cgpa']}\n"
+        # Skills
+        if resume_data["skills"]:
+            formatted_resume += "\nSKILLS\n"
+            formatted_resume += ", ".join(resume_data["skills"]) + "\n"
+        
+        # Projects
+        if resume_data["projects"]:
+            formatted_resume += "\nPROJECTS\n"
+            for proj in resume_data["projects"]:
+                formatted_resume += f"\n{proj['title']}\n"
+                if proj['start_date']:
+                    formatted_resume += f"{proj['start_date']} to {proj['end_date']}\n"
+                if proj['description']:
+                    formatted_resume += f"{proj['description']}\n"
+        
+        # Experience
+        if resume_data["experience"]:
+            formatted_resume += "\nEXPERIENCE\n"
+            for exp in resume_data["experience"]:
+                formatted_resume += f"\n{exp['title']}\n"
+                if exp['start_date']:
+                    formatted_resume += f"{exp['start_date']} to {exp['end_date']}\n"
+                if exp['description']:
+                    formatted_resume += f"{exp['description']}\n"
+        
+        # Job Description
+        if resume_data["job_description"]:
+            formatted_resume += "\nJOB DESCRIPTION\n"
+            formatted_resume += f"{resume_data['job_description']}\n"
+        
+        # Call the LLM with the formatted resume data
+        response = model.invoke(
+            SYSTEM_PROMPT_TEMPLATE.format(resume_data=formatted_resume)
         )
+        
+        # Convert AIMessage to string if needed
+        response_content = response.content if hasattr(response, 'content') else str(response)
+        
+        # Save the AI-generated resume to a file
+        output_file = os.path.join('.tmp', f"{name.replace(' ', '_')}_resume.md" if name else 'resume.md')
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(response_content)
+        
+        st.success(f"✅ AI-generated resume saved successfully to {output_file}!")
+        
+        # Display the generated resume in the app
+        st.markdown("## Generated Resume Preview")
+        st.markdown(response_content, unsafe_allow_html=True)
 
-        # Validate and display
-        st.success("✅ AI Response Generated Successfully!")
-        st.json(response.model_dump())  # ✅ Fixed for Pydantic v2
-
-    except ValidationError as ve:
-        st.error(f"Validation Error: {ve}")
     except Exception as e:
-        st.error(f"Error: {e}")
+        st.error(f"An error occurred while generating the resume: {str(e)}")
+        st.exception(e)
